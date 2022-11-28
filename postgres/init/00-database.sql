@@ -1,0 +1,1 @@
+CREATE TABLE sample_table (name VARCHAR(10), PRIMARY KEY id)
