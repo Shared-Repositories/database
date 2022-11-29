@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  graphile:
+    image: graphile/postgraphile:4
+    container_name: graphile-${APP_NAME}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "5433:5433"
+    networks:
+      - database-net
+    env_file: .env
+    command:
+      [
+        "--enable-query-batching",
+        "--connection",
+        "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}",
+        "--port",
+        "5433",
+        "${GRAPHILE_EXTRA_OPTIONS_DEV}"
+      ]
+    restart: always
+
+  database:
+    image: postgres:latest
+    container_name: postgresql-${APP_NAME}
+    expose:
+      - "5432"
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - database-net
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+volumes:
+  pgsql-data:
+    name: pgsql-data-${APP_NAME}
+
+networks:
+  database-net:
+    driver: bridge
